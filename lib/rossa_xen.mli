@@ -15,13 +15,13 @@ val with_session : api -> user -> (rpc -> string -> 'a Lwt.t) -> 'a Lwt.t
   * closed afterwards. The result is the one returned by [f].
   *)
 
-val find_template : rpc -> session -> name: string 
+val find_template : rpc -> session -> name: string
   -> (string * API.vM_t) option Lwt.t
 (** [find_template rpc session name] returns the first template
   * that has name [name].
   *)
 
 val create_mirage_vm : rpc -> session -> template:string -> string Lwt.t
-(** [create_mirage_vm] creates a unikernel VM from a template and 
+(** [create_mirage_vm] creates a unikernel VM from a template and
   * returns a handle for it
   *)

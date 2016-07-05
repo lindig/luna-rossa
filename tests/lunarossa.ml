@@ -25,10 +25,10 @@ let help_main man_format cmds = function
     | `Ok t when t = "topics" -> List.iter print_endline topics; `Ok true
     | `Ok t when List.mem t cmds -> `Help (man_format, Some t)
     | `Ok t -> (* only reached when we add topics above *)
-        let page = (topic, 7, "", "", ""), 
+        let page = (topic, 7, "", "", ""),
             [`S "OTHER"
             ;`P "Here is room for online help texts"
-            ] 
+            ]
         in
             `Ok ( C.Manpage.print man_format Format.std_formatter page
                 ; true
@@ -42,7 +42,7 @@ module CMD = struct
   let servers =
     let doc = "JSON file describing Xen Servers available for testing." in
       C.Arg.(value
-          & opt file "etc/servers.json" 
+          & opt file "etc/servers.json"
           & info ["s"; "servers"] ~docv:"servers.json" ~doc)
 
   (** option -c *)
@@ -55,7 +55,7 @@ module CMD = struct
   (** option --suite *)
   let suite =
     let id    = List.map (fun x -> (x, x)) in
-    let suite = C.Arg.enum 
+    let suite = C.Arg.enum
       (id ["all"; "positive"; "negative"; "interesting"]) in
     let doc = "Name of test suite" in
       C.Arg.(value
@@ -72,14 +72,14 @@ module CMD = struct
 
   let help =
     let doc = "help for lunarossa sub commands" in
-    let man = 
+    let man =
       [ `S "DESCRIPTION"
       ; `P "provide help for a sub command"
       ; `S "BUGS"
-      ; `P "Report bug on the github issue tracker" 
-      ] 
+      ; `P "Report bug on the github issue tracker"
+      ]
     in
-      ( C.Term.(ret 
+      ( C.Term.(ret
         (const help_main $ man_format $ choice_names $ topic))
       , C.Term.info "help" ~version:"1.0" ~doc ~man
       )
@@ -87,13 +87,13 @@ module CMD = struct
   (** [lunarossa] is the outermost and default command *)
   let lunarossa =
     let doc = "a test suite for XenServer" in
-    let man = 
+    let man =
       [`S "MORE HELP"
       ;`P "Use `$(mname) $(i,COMMAND) --help' for help on a single command."
       ;`Noblank
-      ] 
+      ]
     in
-      ( C.Term.(ret 
+      ( C.Term.(ret
         (const (fun _ -> `Help (`Pager, None)) $ const () ))
       , C.Term.info "lunarossa" ~version:"1.0" ~doc ~man
       )
@@ -103,12 +103,12 @@ module CMD = struct
 
   let quicktest =
     let doc = "run on-board quicktest on a Xen Server" in
-    let man = 
+    let man =
       [ `S "DESCRIPTION"
       ; `P "Run the on-board quicktest test suite on a server."
       ; `S "BUGS"
-      ; `P "Report bug on the github issue tracker" 
-      ] 
+      ; `P "Report bug on the github issue tracker"
+      ]
     in
       ( C.Term.(const Quicktest.main $ servers $ config)
       , C.Term.info "quicktest" ~version:"1.0" ~doc ~man
@@ -116,14 +116,14 @@ module CMD = struct
 
   let powercycle =
     let doc = "start a Mirage VM and powercycle it" in
-    let man = 
+    let man =
       [ `S "DESCRIPTION"
       ; `P "Start a VM and go through a powercycle with it. By default
             only positive test cases are tested. See option -t
             for selecting a different set. "
       ; `S "BUGS"
-      ; `P "Report bug on the github issue tracker" 
-      ] 
+      ; `P "Report bug on the github issue tracker"
+      ]
     in
       ( C.Term.(const Powercycle.main $ servers $ config $ suite)
       , C.Term.info "powercycle" ~version:"1.0" ~doc ~man
@@ -132,13 +132,13 @@ module CMD = struct
   (** This is a template for adding new tests *)
   let dummy =
     let doc = "Run a dummy test" in
-    let man = 
+    let man =
       [ `S "DESCRIPTION"
       ; `P "Executes a date command on a list of servers. This list
-            is provided in the 'servers' array in tests.json" 
+            is provided in the 'servers' array in tests.json"
       ; `S "BUGS"
-      ; `P "Report bug on the github issue tracker" 
-      ] 
+      ; `P "Report bug on the github issue tracker"
+      ]
     in
       ( C.Term.(const Dummy.main $ servers $ config)
       , C.Term.info "dummy" ~version:"1.0" ~doc ~man
@@ -146,17 +146,17 @@ module CMD = struct
 
 
   (** add any additional test here *)
-  let cmds = 
+  let cmds =
     [ help
     ; quicktest
     ; powercycle
     ; dummy
-    ] 
+    ]
 end
 
-let () = 
+let () =
   Coverage.init "lunarossa";
-  match C.Term.eval_choice CMD.lunarossa CMD.cmds with 
+  match C.Term.eval_choice CMD.lunarossa CMD.cmds with
   | `Ok(true)   -> exit 0 (* all tests passed *)
   | `Ok(false)  -> exit 1 (* some test failed *)
   | `Error _    -> exit 2 (* unexpected error *)

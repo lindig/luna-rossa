@@ -52,9 +52,9 @@ module HostRequest = struct
   type clean  = Clean  | Hard
   type t =
     | Shutdown of clean
-    | Reboot  
+    | Reboot
     | Suspend
-    | ResumeTo of paused 
+    | ResumeTo of paused
     | Unpause
 
   let to_string = function
@@ -66,7 +66,7 @@ module HostRequest = struct
     | ResumeTo(Running)   -> "Resume(Running)"
     | Unpause             -> "Unpause"
 
-  let all = 
+  let all =
     [ Shutdown(Clean)
     ; Shutdown(Hard)
     ; Reboot
@@ -154,10 +154,10 @@ end
 module XenState = struct
   let observe rpc session vm =
     VM.get_power_state rpc session vm >>=
-    ( function 
-    | `Halted       -> return "Halted" 
-    | `Paused       -> return "Paused" 
-    | `Running      -> return "Running" 
+    ( function
+    | `Halted       -> return "Halted"
+    | `Paused       -> return "Paused"
+    | `Running      -> return "Running"
     | `Suspended    -> return "Suspended"
     | _             -> return "unknown"
     )
@@ -176,7 +176,7 @@ let pairs xs ys =
 
 (** a test case is represented by Test.t *)
 module Test = struct
-  type t = 
+  type t =
     { vm:       ClientState.t
     ; request:  HostRequest.t
     ; ack:      AckRequest.t
@@ -190,13 +190,13 @@ module Test = struct
       (AckRequest.to_string   t.ack)
       (ClientAction.to_string t.action)
 
-  let all = 
+  let all =
     let ( ** ) = pairs in
       HostRequest.all
       ** ClientState.all
       ** ClientAction.all
       ** AckRequest.all
-      |> List.map (fun (req,(vm,(action,ack))) -> 
+      |> List.map (fun (req,(vm,(action,ack))) ->
           { vm =  vm
           ; request = req
           ; ack = ack
@@ -230,7 +230,7 @@ module Test = struct
  (* | R.Unpause     , _           -> true *)
     | _             , _           -> false
 
-  (** [is_positive t] is true if test case [t] exercises 
+  (** [is_positive t] is true if test case [t] exercises
    *  a scenario in that we expect to see errors reported
    *  by the API *)
   let is_positive t =
@@ -265,14 +265,14 @@ let log fmt =
 (** [xs_write] writes a [value] to a Xen Store [path]. This
  * implementation uses SSH to do this.  *)
 let xs_write server path value =
-  let cmd = sprintf "sudo xenstore write '%s' '%s'" path value in 
-    S.Lwt.ssh server cmd 
+  let cmd = sprintf "sudo xenstore write '%s' '%s'" path value in
+    S.Lwt.ssh server cmd
 
 
 (** find the named server in the inventory *)
 let find name servers =
-  try  S.find name servers 
-  with Not_found -> error "host '%s' is unknown" name 
+  try  S.find name servers
+  with Not_found -> error "host '%s' is unknown" name
 
 (** [find_template] finds a template by [name] *)
 let find_template rpc session name =
@@ -281,7 +281,7 @@ let find_template rpc session name =
     | None   -> X.fail "can't find template %s" name
 
 (** [create_vm] creates a VM using the kernel we have put into
- *  place during setup and returns the VM's handle from which it 
+ *  place during setup and returns the VM's handle from which it
  *  can be started
  *)
 let create_vm rpc session =
@@ -292,16 +292,16 @@ let create_vm rpc session =
   find_template rpc session template >>= fun (t,_) ->
   log "found template %s" template >>= fun () ->
   VM.clone rpc session t clone >>= fun vm ->
-  VM.provision rpc session vm >>= fun _ -> 
+  VM.provision rpc session vm >>= fun _ ->
   VM.set_PV_kernel rpc session vm kernel >>= fun () ->
   VM.set_HVM_boot_policy rpc session vm "" >>= fun () ->
-  VM.set_memory_limits 
-    ~rpc 
-    ~session_id:session 
-    ~self:vm 
-    ~static_min:meg32 
-    ~static_max:meg32 
-    ~dynamic_min:meg32 
+  VM.set_memory_limits
+    ~rpc
+    ~session_id:session
+    ~self:vm
+    ~static_min:meg32
+    ~static_max:meg32
+    ~dynamic_min:meg32
     ~dynamic_max:meg32 >>= fun () ->
   log "cloned '%s' to '%s'" template clone >>= fun () ->
   return vm
@@ -316,14 +316,14 @@ let sleep secs =
 let provision_vm rpc session (state: ClientState.t) =
   let start_paused = true in
   create_vm rpc session >>= fun vm ->
-  match state with 
-  | ClientState.Running -> 
+  match state with
+  | ClientState.Running ->
     VM.start rpc session vm (not start_paused) false >>= fun () ->
     return vm
-  | ClientState.Paused -> 
+  | ClientState.Paused ->
     VM.start rpc session vm start_paused  false >>= fun () ->
     return vm
-  | ClientState.Halted -> 
+  | ClientState.Halted ->
     return vm
   | ClientState.Suspended ->
     VM.start rpc session vm (not start_paused) false >>= fun () ->
@@ -340,11 +340,11 @@ let command ack action =
     ; "ack"     , AckRequest.to_json ack
     ]
     |> Y.to_string
-    
+
 (** [xs_testing] writes a value into "control/testing" in Xen Store for
  * [domid] on [server] *)
 let xs_testing server domid value =
-  xs_write 
+  xs_write
     server (sprintf "/local/domain/%Ld/control/testing" domid)
     value
 
@@ -354,7 +354,7 @@ let xs_testing server domid value =
  * to wait 2 secs to make sure it does *)
 let prepare_vm server domid (config: Test.t) =
   let json = command config.Test.ack config.Test.action in
-  if domid < 0L then 
+  if domid < 0L then
     log "can't prepare VM because domid=%Ld" domid
   else
     xs_testing server domid json >>= fun _ ->
@@ -362,20 +362,20 @@ let prepare_vm server domid (config: Test.t) =
     sleep 2.0
 
 (** [trying f] ignores execptions from the API *)
-let trying f = Lwt.catch f 
-  (function 
-    | E.Server_error(msg,_) -> 
+let trying f = Lwt.catch f
+  (function
+    | E.Server_error(msg,_) ->
       log "ignoring exception %s" msg >>= fun () -> return ()
     | e ->
       log "unexpected exception - giving up" >>= fun () ->
       Lwt.fail(e))
 
 (** [exec] executes a single test *)
-let exec server rpc session (config: Test.t) = 
+let exec server rpc session (config: Test.t) =
   log "" >>= fun () ->
   log "## testing %s" (Test.to_string config) >>= fun () ->
   provision_vm rpc session config.Test.vm >>= fun vm ->
-    Lwt.catch 
+    Lwt.catch
       (fun () ->
         VM.get_domid rpc session vm >>= fun domid ->
         log "VM domid is %Ld" domid >>= fun () ->
@@ -387,7 +387,7 @@ let exec server rpc session (config: Test.t) =
           VM.clean_shutdown rpc session vm >>= fun () ->
           log "VM cleanly shutdown" >>= fun () ->
           return ()
-        
+
         | HostRequest.Shutdown(HostRequest.Hard) ->
           VM.hard_shutdown rpc session vm >>= fun () ->
           log "VM forcefully shutdown" >>= fun () ->
@@ -397,7 +397,7 @@ let exec server rpc session (config: Test.t) =
           VM.hard_reboot rpc session vm >>= fun () ->
           log "VM rebooted" >>= fun () ->
           return ()
-        
+
         | HostRequest.Suspend  ->
           VM.suspend rpc session vm >>= fun () ->
           log "VM suspended" >>= fun () ->
@@ -417,7 +417,7 @@ let exec server rpc session (config: Test.t) =
           VM.unpause rpc session vm >>= fun () ->
           log "VM unpaused" >>= fun () ->
           return ()
-        
+
         ) >>= fun () ->
         VM.get_domid rpc session vm >>= fun domid ->
         log "VM domid is %Ld" domid >>= fun () ->
@@ -442,19 +442,19 @@ let exec server rpc session (config: Test.t) =
 
 (** [test] runs all test cases that we have *)
 let test server tests rpc session =
-  log "running %d tests" (List.length tests) >>= fun () -> 
+  log "running %d tests" (List.length tests) >>= fun () ->
   Lwt_list.iter_s (exec server rpc session) tests
 
 (** [join_by_nl] turns a JSON array of strings into a string where
  * the input strings are joined by newlines. We use this
- * for creating shell scripts from JSON arrays 
+ * for creating shell scripts from JSON arrays
  * *)
 let join_by_nl json =
-  json 
-  |> U.convert_each U.to_string 
+  json
+  |> U.convert_each U.to_string
   |> String.concat "\n"
-  
-(** [ssh server cmd] executes [cmd] on [server] and fails in 
+
+(** [ssh server cmd] executes [cmd] on [server] and fails in
   * the case of an error *)
 let ssh server cmd =
   match S.ssh server cmd with
@@ -462,9 +462,9 @@ let ssh server cmd =
   | rc, stdout  -> error "executing [%s] failed with %d" cmd rc
 
 (* [main] is the heart of this test *)
-let main servers_json config_json suite = 
+let main servers_json config_json suite =
   let servers   = S.read servers_json in
-  let config    = C.read config_json "powercycle" in 
+  let config    = C.read config_json "powercycle" in
   let hostname  = config |> U.member "server" |> U.to_string in
   let server    = find hostname servers in
   let api       = S.api server in
@@ -479,7 +479,7 @@ let main servers_json config_json suite =
                   | s               -> error "unknown test suite %s" s
   in
     try
-      ( ssh server setup_sh 
+      ( ssh server setup_sh
       ; Lwt_main.run (X.with_session api root (test server suite))
       ; ssh server cleanup_sh
       ; true

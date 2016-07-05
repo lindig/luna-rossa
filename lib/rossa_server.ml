@@ -5,7 +5,7 @@ module U  = Yojson.Basic.Util
 
 
 exception Error of string
-let fail fmt = Printf.kprintf (fun msg -> raise (Error msg)) fmt 
+let fail fmt = Printf.kprintf (fun msg -> raise (Error msg)) fmt
 
 type user =
   { username:   string
@@ -15,7 +15,7 @@ type user =
 type api = string
 
 (** Xen Sever host *)
-type t = 
+type t =
   { name:   string
   ; ssh:    string list
   ; api:    string
@@ -47,7 +47,7 @@ let exec cmd args =
     let rc = wait (Unix.create_process cmd execv stdin stdout stderr) in
     let () = Unix.close stdout in
     let stdout = Unix.in_channel_of_descr rstdout in
-      begin 
+      begin
         try while true do Buffer.add_channel buf stdout 1 done
         with End_of_file -> close_in stdout
       end;
@@ -63,7 +63,7 @@ module Lwt = struct
     let ssh t arg =
       match t.ssh with
         | [] -> Lwt.fail_with "no ssh command found in JSON server record"
-        | cmd::args -> 
+        | cmd::args ->
             let command = (cmd, Array.of_list (cmd::args@[arg])) in
               Lwt_process.pread command
 end
@@ -89,12 +89,12 @@ let server json =
   * and returns them as a [t list] value.
   *)
 let read file_json =
-  Y.from_file file_json 
-  |> U.member "servers" 
-  |> U.to_list 
-  |> List.map server 
+  Y.from_file file_json
+  |> U.member "servers"
+  |> U.to_list
+  |> List.map server
 
 
 (** [find name ts] finds a server by name in a list of servers
   *)
-let find name ts = List.find (fun t -> t.name = name) ts 
+let find name ts = List.find (fun t -> t.name = name) ts

@@ -17,19 +17,19 @@ let echo fmt = Printf.ksprintf (fun msg -> print_endline msg) fmt
 
 (** find the named server in the inventory *)
 let find name servers =
-  try  S.find name servers 
-  with Not_found -> error "host '%s' is unknown" name 
+  try  S.find name servers
+  with Not_found -> error "host '%s' is unknown" name
 
 (** [test] runs a single qucktest [subtest] on [server]. The quicktest
  * binary can be found at [path]. *)
 let test server path subtest =
   let cmd = sprintf "sudo %s -single %s" path subtest in
     match S.ssh server cmd with
-    | 0,  stdout   -> 
+    | 0,  stdout   ->
       ( echo "# quicktest (%-25s) finished successfully" subtest
       ; 0
       )
-    | rc, stdout  -> 
+    | rc, stdout  ->
       ( echo "# quicktest (%-25s) failed with exit code %d" subtest rc
       ; echo "%s" stdout
       ; rc
@@ -39,15 +39,15 @@ let test server path subtest =
   * parameters are JSON objects describing the run-time parameter
   * for the test. This function is called from [main_t].
   *)
-let main servers_json config_json  = 
+let main servers_json config_json  =
     let servers   = S.read servers_json in
-    let config    = C.read config_json "quicktest" in 
+    let config    = C.read config_json "quicktest" in
     let hostname  = config |> U.member "server"   |> U.to_string in
     let path      = config |> U.member "path"     |> U.to_string in
     let server    = find hostname servers in (* path to binary *)
-      config 
+      config
       |> U.member "subtests"
-      |> U.convert_each U.to_string 
+      |> U.convert_each U.to_string
       |> List.map (test server path)
       |> List.for_all ((=) 0)
 

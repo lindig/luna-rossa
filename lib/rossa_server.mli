@@ -1,19 +1,19 @@
-(** This module provides access to the Xen Servers that are available 
+(** This module provides access to the Xen Servers that are available
  *  for testing
  *)
 
 exception Error of string
 
 type api = string (* a URI like http://hostname *)
-type user = 
+type user =
   { username : string
-  ; password : string 
+  ; password : string
   }
 
 type t (* a Xen Server *)
 
 val read: string -> t list
-(** [read servers_json] read a file [servers_json] that describes 
+(** [read servers_json] read a file [servers_json] that describes
     a set of servers that are available for testing *)
 
 val find: string -> t list -> t (* Not_found *)
@@ -21,10 +21,10 @@ val find: string -> t list -> t (* Not_found *)
     [Not_found] *)
 
 
-val name :  t -> string 
+val name :  t -> string
 (** name of a server, it should be unique within a config file *)
 
-val root :  t -> user 
+val root :  t -> user
 (** credentials to access the Xen API on the server *)
 
 val ssh :   t -> string -> int * string
